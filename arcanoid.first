@@ -1,0 +1,111 @@
+import pygame
+import sys
+import random
+
+# Ініціалізація Pygame
+pygame.init()
+
+# Константи
+WIDTH, HEIGHT = 640, 480
+PADDLE_WIDTH, PADDLE_HEIGHT = 100, 20
+BALL_RADIUS = 15
+FPS = 60
+
+# Кольори
+WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+
+# Створення вікна гри
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Арканоїд")
+
+# Клас Ракетка
+class Paddle:
+    def __init__(self):
+        self.width = PADDLE_WIDTH
+        self.height = PADDLE_HEIGHT
+        self.x = (WIDTH - PADDLE_WIDTH) // 2
+        self.y = HEIGHT - PADDLE_HEIGHT - 10
+        self.speed = 25
+
+    def move(self, direction):
+        if direction == "left" and self.x > 0:
+            self.x -= self.speed
+        elif direction == "right" and self.x < WIDTH - self.width:
+            self.x += self.speed
+
+    def draw(self):
+        pygame.draw.rect(screen, BLUE, (self.x, self.y, self.width, self.height))
+
+
+# Клас Куля
+class Ball:
+    def __init__(self):
+        self.radius = BALL_RADIUS
+        self.x = WIDTH // 2
+        self.y = HEIGHT // 2
+        self.speed_x = random.choice([-5, 5])
+        self.speed_y = -5
+
+    def move(self):
+        self.x += self.speed_x
+        self.y += self.speed_y
+
+    def check_collision(self):
+        if self.x - self.radius < 0 or self.x + self.radius > WIDTH:
+            self.speed_x *= -1
+        if self.y - self.radius < 0:
+            self.speed_y *= -1
+
+    def check_paddle_collision(self, paddle):
+        if (
+            paddle.x < self.x < paddle.x + paddle.width
+            and paddle.y < self.y + self.radius < paddle.y + paddle.height
+        ):
+            self.speed_y *= -1
+
+    def check_miss(self):
+        return self.y > HEIGHT
+
+    def draw(self):
+        pygame.draw.circle(screen, RED, (int(self.x), int(self.y)), self.radius)
+
+
+# Створення об'єктів
+paddle = Paddle()
+ball = Ball()
+
+# Основний цикл гри
+clock = pygame.time.Clock()
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                paddle.move("left")
+            elif event.key == pygame.K_RIGHT:
+                paddle.move("right")
+
+    # Рух кулі
+    ball.move()
+
+    # Перевірка колізій
+    ball.check_collision()
+    ball.check_paddle_collision(paddle)
+
+    # Перевірка пропущеної кулі
+    if ball.check_miss():
+        ball = Ball()
+
+    # Відображення
+    screen.fill(WHITE)
+    paddle.draw()
+    ball.draw()
+    pygame.display.flip()
+
+    # Обмеження кадрів на секунду
+    clock.tick(FPS)
